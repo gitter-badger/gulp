@@ -196,10 +196,8 @@ function logEvents(gulpInst) {
       gutil.log('Finished', data.slice(0, bound).join(', '));
       var index = bound;
       var len = data.length;
-      if( len > bound ){
-        while (index < len) {
-          gutil.log('Finished', data.slice(index, index += bound).join(', '));
-        }
+      while (index < len) {
+        gutil.log('Finished', data.slice(index, index += bound).join(', '));
       }
     });
   });
