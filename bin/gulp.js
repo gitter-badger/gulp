@@ -13,6 +13,7 @@ var v8flags = require('v8flags');
 var completion = require('../lib/completion');
 var argv = require('minimist')(process.argv.slice(2));
 var taskTree = require('../lib/taskTree');
+var batch = require('batch-these');
 
 // set env var for ORIGINAL cwd
 // before anything touches it
@@ -178,17 +179,29 @@ function logEvents(gulpInst) {
   });
 
   gulpInst.on('task_start', function (e) {
-    // TODO: batch these
-    // so when 5 tasks start at once it only logs one time with all 5
-    gutil.log('Starting', '\'' + chalk.cyan(e.task) + '\'...');
+    // batched output for task start
+    var chunk = '\'' + chalk.cyan(e.task) + '\'';
+    batch.these(chunk, function(data){
+      gutil.log('Starting', data.join(', '),'...');
+    });
   });
 
   gulpInst.on('task_stop', function (e) {
     var time = prettyTime(e.hrDuration);
-    gutil.log(
-      'Finished', '\'' + chalk.cyan(e.task) + '\'',
-      'after', chalk.magenta(time)
-    );
+    var chunk  = '\'' + chalk.cyan(e.task) + '\'';
+        chunk += ' after ' + chalk.magenta(time);
+    batch.these(chunk, function(data){
+      // `stop` loggings are longer. Limited to 3 per line
+      var bound = 3;
+      gutil.log('Finished', data.slice(0, bound).join(', '));
+      var index = bound;
+      var len = data.length;
+      if( len > bound ){
+        while (index < len) {
+          gutil.log('Finished', data.slice(index, index += bound).join(', '));
+        }
+      }
+    });
   });
 
   gulpInst.on('task_err', function (e) {
